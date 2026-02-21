@@ -1,0 +1,211 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>COO Coaching Dashboard</title>
+<style>
+    :root {
+        --primary-start:#2c3e50;
+        --primary-end:#8e44ad;
+        --card-bg:#ffffff;
+        --card-shadow:rgba(0,0,0,0.1);
+        --accent:#3498db;
+        --text-dark:#333333;
+        --text-light:#ffffff;
+    }
+    body{
+        margin:0;
+        font-family:'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        background:#f4f7fb;
+        color:var(--text-dark);
+        line-height:1.6;
+    }
+    header{
+        background:linear-gradient(135deg,var(--primary-start),var(--primary-end));
+        color:var(--text-light);
+        padding:2rem 1rem;
+        text-align:center;
+    }
+    header h1{
+        margin:0;
+        font-size:2rem;
+    }
+    .container{
+        max-width:1200px;
+        margin:auto;
+        padding:1rem;
+    }
+    .section{
+        background:#fff;
+        border-radius:8px;
+        box-shadow:0 2px 6px var(--card-shadow);
+        margin:1.5rem 0;
+        padding:1.5rem;
+    }
+    .section h2{
+        margin-top:0;
+        color:var(--primary-start);
+    }
+    .grid{
+        display:grid;
+        gap:1rem;
+    }
+    @media(min-width:600px){
+        .grid-2{grid-template-columns:repeat(2,1fr);}
+        .grid-3{grid-template-columns:repeat(3,1fr);}
+        .grid-4{grid-template-columns:repeat(4,1fr);}
+    }
+    .card{
+        background:var(--card-bg);
+        border-radius:6px;
+        padding:1rem;
+        box-shadow:0 1px 4px var(--card-shadow);
+        transition:transform .2s;
+    }
+    .card:hover{
+        transform:translateY(-4px);
+    }
+    .progress-container{
+        background:#e0e0e0;
+        border-radius:4px;
+        overflow:hidden;
+        height:12px;
+        margin-top:.5rem;
+    }
+    .progress-bar{
+        height:100%;
+        background:var(--accent);
+        width:0%;
+        transition:width .5s ease-in-out;
+    }
+    ul, ol{
+        padding-left:1.2rem;
+    }
+    .action-item{
+        display:flex;
+        flex-direction:column;
+        margin-bottom:1rem;
+    }
+    .action-item span{
+        font-weight:600;
+    }
+</style>
+</head>
+<body>
+<header>
+    <h1>COO Coaching Dashboard</h1>
+</header>
+<div class="container">
+
+    <!-- Executive Summary -->
+    <section class="section">
+        <h2>Executive Summary</h2>
+        <p><strong>Communication Patterns Observed</strong></p>
+        <ul>
+            <li>Technical discussions dominate the conversation</li>
+            <li>Collaborative decision‑making with requests for input</li>
+            <li>Delegation of troubleshooting and follow‑up tasks</li>
+            <li>Supportive, informal team dynamics (quick acknowledgments, humor)</li>
+            <li>Frequent mentions of calls, meetings, and status updates</li>
+        </ul>
+        <p><strong>Key Strengths</strong></p>
+        <ul>
+            <li>Collaborative leadership style that seeks consensus</li>
+            <li>Proactive problem‑solving and rapid issue escalation</li>
+            <li>Clear, concise communication of technical details</li>
+        </ul>
+    </section>
+
+    <!-- Communication Patterns Found -->
+    <section class="section">
+        <h2>Communication Patterns Found</h2>
+        <div class="grid grid-3">
+            <div class="card">
+                <h3>Technical Discussions</h3>
+                <p>Dominate the conversation</p>
+            </div>
+            <div class="card">
+                <h3>Collaborative Decision‑Making</h3>
+                <p>Requests for input are frequent</p>
+            </div>
+            <div class="card">
+                <h3>Delegation & Follow‑Up</h3>
+                <p>Troubleshooting tasks are handed off quickly</p>
+            </div>
+            <div class="card">
+                <h3>Supportive Team Dynamics</h3>
+                <p>Quick acknowledgments, humor, informal tone</p>
+            </div>
+            <div class="card">
+                <h3>Meeting & Call Frequency</h3>
+                <p>Regular status updates and syncs</p>
+            </div>
+        </div>
+    </section>
+
+    <!-- Growth Opportunities -->
+    <section class="section">
+        <h2>Growth Opportunities</h2>
+        <div class="grid grid-2">
+            <div class="card">
+                <h3>Formalize Decision‑Making</h3>
+                <p>Avoid ad‑hoc choices</p>
+                <div class="progress-container"><div class="progress-bar" style="width:0%"></div></div>
+            </div>
+            <div class="card">
+                <h3>Clarify Task Ownership & Deadlines</h3>
+                <p>Make assignments explicit</p>
+                <div class="progress-container"><div class="progress-bar" style="width:0%"></div></div>
+            </div>
+            <div class="card">
+                <h3>Standardize Meeting Cadence & Agendas</h3>
+                <p>Focus on outcomes</p>
+                <div class="progress-container"><div class="progress-bar" style="width:0%"></div></div>
+            </div>
+            <div class="card">
+                <h3>Structured Feedback Loops</h3>
+                <p>Introduce post‑mortems/retros</p>
+                <div class="progress-container"><div class="progress-bar" style="width:0%"></div></div>
+            </div>
+            <div class="card">
+                <h3>Balance Technical & Strategic Focus</h3>
+                <p>Schedule bi‑weekly strategic reviews</p>
+                <div class="progress-container"><div class="progress-bar" style="width:0%"></div></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- 30-Day Action Plan -->
+    <section class="section">
+        <h2>30‑Day Action Plan</h2>
+        <ol>
+            <li><strong>Implement Structured Decision‑Making</strong> – Adopt a lightweight framework (RAPID or DACI) and document owner, criteria, timeline for each key choice.</li>
+            <li><strong>Clarify Task Ownership & Deadlines</strong> – When assigning work, specify responsible person, expected completion date, and measurable outcome; track in a tool.</li>
+            <li><strong>Standardize Meeting Cadence & Agendas</strong> – Create a template with purpose, agenda items, owners, and desired decisions; circulate 15 min before each meeting.</li>
+            <li><strong>Encourage Structured Feedback Loops</strong> – Hold brief post‑mortem or retro sessions after major incidents/releases to capture lessons learned.</li>
+            <li><strong>Balance Technical Focus with Strategic Planning</strong> – Set a recurring bi‑weekly strategic review meeting to discuss roadmap, priorities, and long‑term metrics.</li>
+        </ol>
+    </section>
+
+    <!-- Weekly Reflection Questions -->
+    <section class="section">
+        <h2>Weekly Reflection Questions</h2>
+        <ol>
+            <li>What progress have I made toward formalizing decision‑making this week?</li>
+            <li>How clearly did I define task owners and deadlines for delegated work?</li>
+            <li>Did my meetings have a pre‑set agenda and clear outcomes? What can be improved?</li>
+            <li>What feedback loops did I introduce, and what insights emerged?</li>
+            <li>How did I allocate time for strategic planning versus immediate technical issues?</li>
+        </ol>
+    </section>
+
+</div>
+<script>
+    // Simple demo to animate progress bars (replace with real data in production)
+    document.querySelectorAll('.progress-bar').forEach((bar,i)=>{
+        setTimeout(()=>{ bar.style.width = ((i+1)*20)+'%'; }, 500);
+    });
+</script>
+</body>
+</html>
