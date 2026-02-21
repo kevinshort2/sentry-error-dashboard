@@ -1,0 +1,1477 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sentry Error Report - Last 90 Days</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #333;
+            line-height: 1.6;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+            color: white;
+            padding: 40px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .header p {
+            font-size: 1.1em;
+            opacity: 0.9;
+        }
+
+        .stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            padding: 40px;
+            background: #f8f9fa;
+        }
+
+        .stat-card {
+            background: white;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            text-align: center;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+
+        .stat-number {
+            font-size: 2.5em;
+            font-weight: 700;
+            color: #667eea;
+            margin-bottom: 10px;
+        }
+
+        .stat-label {
+            font-size: 1em;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .section-title {
+            font-size: 1.8em;
+            margin-bottom: 25px;
+            color: #1e3c72;
+            font-weight: 700;
+            border-bottom: 3px solid #667eea;
+            padding-bottom: 10px;
+        }
+
+        .issue-table {
+            width: 100%;
+            border-collapse: separate;
+            border-spacing: 0;
+            margin-top: 20px;
+        }
+
+        .issue-table thead {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+
+        .issue-table th {
+            padding: 15px;
+            text-align: left;
+            font-weight: 600;
+            text-transform: uppercase;
+            font-size: 0.85em;
+            letter-spacing: 0.5px;
+        }
+
+        .issue-table th:first-child {
+            border-top-left-radius: 10px;
+        }
+
+        .issue-table th:last-child {
+            border-top-right-radius: 10px;
+        }
+
+        .issue-table tbody tr {
+            transition: all 0.3s ease;
+            border-bottom: 1px solid #eee;
+        }
+
+        .issue-table tbody tr:hover {
+            background: #f8f9fa;
+            transform: scale(1.01);
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+
+        .issue-table td {
+            padding: 15px;
+        }
+
+        .issue-title {
+            font-weight: 600;
+            color: #1e3c72;
+            max-width: 500px;
+        }
+
+        .badge {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 20px;
+            font-size: 0.85em;
+            font-weight: 600;
+        }
+
+        .badge-error {
+            background: #fee;
+            color: #c33;
+        }
+
+        .badge-warning {
+            background: #ffeaa7;
+            color: #d63031;
+        }
+
+        .badge-info {
+            background: #dfe6e9;
+            color: #2d3436;
+        }
+
+        .badge-unresolved {
+            background: #ff7675;
+            color: white;
+        }
+
+        .badge-resolved {
+            background: #00b894;
+            color: white;
+        }
+
+        .count-badge {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-weight: 700;
+        }
+
+        .date {
+            color: #666;
+            font-size: 0.9em;
+        }
+
+        .footer {
+            background: #1e3c72;
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        a {
+            color: #667eea;
+            text-decoration: none;
+        }
+
+        a:hover {
+            text-decoration: underline;
+        }
+
+        .top-issues {
+            background: linear-gradient(135deg, #ffeaa7 0%, #fdcb6e 100%);
+            border-left: 5px solid #d63031;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 10px;
+        }
+
+        .project-badge {
+            background: #74b9ff;
+            color: white;
+            padding: 4px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            margin-left: 8px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>⚡ Sentry Error Report</h1>
+            <p>Analysis of errors from the last 90 days</p>
+            <p style="font-size: 0.9em; opacity: 0.8; margin-top: 10px;">Generated on 2026-02-21 20:31:19 UTC</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number">186,431</div>
+                <div class="stat-label">Total Error Events</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">100</div>
+                <div class="stat-label">Unique Issues</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number">1,971</div>
+                <div class="stat-label">Users Affected</div>
+            </div>
+        </div>
+
+        <div class="content">
+            <h2 class="section-title">🔥 Top Issues (Sorted by Frequency)</h2>
+
+            <table class="issue-table">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>Issue Title</th>
+                        <th>Events</th>
+                        <th>Users</th>
+                        <th>Status</th>
+                        <th>Level</th>
+                        <th>First / Last Seen</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    <tr>
+                        <td><strong>1</strong></td>
+                        <td class="issue-title">
+                            System.Exception: Connection string is null or empty.
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">24,502</span></td>
+                        <td>125</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-25<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>2</strong></td>
+                        <td class="issue-title">
+                            Error: Unexpected Execution Error : Connection string is null or empty.
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">17,274</span></td>
+                        <td>3</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-12-17<br/>2026-02-18</td>
+                    </tr>
+                    <tr>
+                        <td><strong>3</strong></td>
+                        <td class="issue-title">
+                            MOBILER Batch name does not exist for location: 230
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">12,967</span></td>
+                        <td>2</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>4</strong></td>
+                        <td class="issue-title">
+                            Network request failed
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">11,837</span></td>
+                        <td>130</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>5</strong></td>
+                        <td class="issue-title">
+                            Unexpected end of JSON input
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">11,478</span></td>
+                        <td>3</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2025-11-23<br/>2026-01-31</td>
+                    </tr>
+                    <tr>
+                        <td><strong>6</strong></td>
+                        <td class="issue-title">
+                            MOBILER Batch name does not exist for location: 181
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">9,378</span></td>
+                        <td>2</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>7</strong></td>
+                        <td class="issue-title">
+                            Unexpected Execution Error: {"response":{"errors":[{"message":"Unexpected Execution Error","location...
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">6,778</span></td>
+                        <td>2</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2026-01-27<br/>2026-02-17</td>
+                    </tr>
+                    <tr>
+                        <td><strong>8</strong></td>
+                        <td class="issue-title">
+                            Bin Code is null. Item No.: 112740 Location Code: 022
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">5,743</span></td>
+                        <td>2</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>9</strong></td>
+                        <td class="issue-title">
+                            Error: Unexpected Execution Error : Connection string is null or empty.
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">5,505</span></td>
+                        <td>3</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2026-01-27<br/>2026-02-10</td>
+                    </tr>
+                    <tr>
+                        <td><strong>10</strong></td>
+                        <td class="issue-title">
+                            System.ServiceModel.FaultException: The tenant 'default' is not accessible.
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">4,811</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-13</td>
+                    </tr>
+                    <tr>
+                        <td><strong>11</strong></td>
+                        <td class="issue-title">
+                            Unexpected Execution Error: {"response":{"errors":[{"message":"Unexpected Execution Error","location...
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">4,572</span></td>
+                        <td>2</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2026-01-27<br/>2026-02-10</td>
+                    </tr>
+                    <tr>
+                        <td><strong>12</strong></td>
+                        <td class="issue-title">
+                            Unexpected Execution Error: {"response":{"errors":[{"message":"Unexpected Execution Error","location...
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">4,572</span></td>
+                        <td>2</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2026-01-27<br/>2026-02-10</td>
+                    </tr>
+                    <tr>
+                        <td><strong>13</strong></td>
+                        <td class="issue-title">
+                            Unexpected Execution Error: {"response":{"errors":[{"message":"Unexpected Execution Error","location...
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">4,545</span></td>
+                        <td>2</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2026-01-27<br/>2026-02-10</td>
+                    </tr>
+                    <tr>
+                        <td><strong>14</strong></td>
+                        <td class="issue-title">
+                            Unexpected Execution Error: {"response":{"errors":[{"message":"Unexpected Execution Error","location...
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">4,266</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2026-01-27<br/>2026-01-30</td>
+                    </tr>
+                    <tr>
+                        <td><strong>15</strong></td>
+                        <td class="issue-title">
+                            System.TimeoutException: The request channel timed out while waiting for a reply after 00:00:57.7107...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">4,264</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>16</strong></td>
+                        <td class="issue-title">
+                            FetchError: request to https://api.sendgrid.com/v3/suppression/bounces failed, reason: Client networ...
+                            <span class="project-badge">auth-server</span>
+                        </td>
+                        <td><span class="count-badge">3,969</span></td>
+                        <td>0</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-25<br/>2026-02-16</td>
+                    </tr>
+                    <tr>
+                        <td><strong>17</strong></td>
+                        <td class="issue-title">
+                            Bin Code is null. Item No.: 207631 Location Code: 022
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">3,953</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>18</strong></td>
+                        <td class="issue-title">
+                            System.ServiceModel.FaultException: The operation could not complete because a record was locked by ...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">3,902</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2025-12-06</td>
+                    </tr>
+                    <tr>
+                        <td><strong>19</strong></td>
+                        <td class="issue-title">
+                            MOBILER Batch name does not exist for location: 222
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">3,842</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>20</strong></td>
+                        <td class="issue-title">
+                            System.TimeoutException: The request channel timed out attempting to send after 00:01:00. Increase t...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">3,695</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>21</strong></td>
+                        <td class="issue-title">
+                            MOBILER Batch name does not exist for location: 118
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">3,438</span></td>
+                        <td>3</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>22</strong></td>
+                        <td class="issue-title">
+                            System.TimeoutException: The request channel timed out while waiting for a reply after 00:00:59.5063...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">3,059</span></td>
+                        <td>2</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>23</strong></td>
+                        <td class="issue-title">
+                            MOBILER Batch name does not exist for location: 231
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">2,292</span></td>
+                        <td>5</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-05</td>
+                    </tr>
+                    <tr>
+                        <td><strong>24</strong></td>
+                        <td class="issue-title">
+                            System.TimeoutException: The request channel timed out while waiting for a reply after 00:00:59.5806...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">1,333</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>25</strong></td>
+                        <td class="issue-title">
+                            Save EditsSaved successfully!
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">1,210</span></td>
+                        <td>4</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-20</td>
+                    </tr>
+                    <tr>
+                        <td><strong>26</strong></td>
+                        <td class="issue-title">
+                            Save EditsSaved successfully!
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">1,106</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-30<br/>2026-01-28</td>
+                    </tr>
+                    <tr>
+                        <td><strong>27</strong></td>
+                        <td class="issue-title">
+                            Error: Unexpected Execution Error : Connection string is null or empty.
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">1,078</span></td>
+                        <td>5</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-12-26<br/>2026-01-30</td>
+                    </tr>
+                    <tr>
+                        <td><strong>28</strong></td>
+                        <td class="issue-title">
+                            System.ServiceModel.CommunicationException: An error occurred while sending the request.
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">918</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>29</strong></td>
+                        <td class="issue-title">
+                            System.ServiceModel.CommunicationException: An error occurred while sending the request.
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">864</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>30</strong></td>
+                        <td class="issue-title">
+                            System.ServiceModel.CommunicationException: An error occurred while sending the request.
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">810</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>31</strong></td>
+                        <td class="issue-title">
+                            MOBILER Batch name does not exist for location: 217
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">803</span></td>
+                        <td>4</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-05</td>
+                    </tr>
+                    <tr>
+                        <td><strong>32</strong></td>
+                        <td class="issue-title">
+                            Microsoft.Data.SqlClient.SqlException: Execution Timeout Expired.  The timeout period elapsed prior ...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">744</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>33</strong></td>
+                        <td class="issue-title">
+                            Unable to check for updates: Unknown
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">649</span></td>
+                        <td>37</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>34</strong></td>
+                        <td class="issue-title">
+                            Error: Unexpected Execution Error : Connection string is null or empty.
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">596</span></td>
+                        <td>66</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2026-01-21<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>35</strong></td>
+                        <td class="issue-title">
+                            Microsoft.Data.SqlClient.SqlException: Execution Timeout Expired.  The timeout period elapsed prior ...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">565</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>36</strong></td>
+                        <td class="issue-title">
+                            Slow DB Query
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">518</span></td>
+                        <td>29</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-20</td>
+                    </tr>
+                    <tr>
+                        <td><strong>37</strong></td>
+                        <td class="issue-title">
+                            System.ServiceModel.FaultException: Sorry, we just updated this page. Reopen it, and try again.
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">489</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2026-02-02<br/>2026-02-18</td>
+                    </tr>
+                    <tr>
+                        <td><strong>38</strong></td>
+                        <td class="issue-title">
+                            Save EditsSaved successfully!
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">442</span></td>
+                        <td>5</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-25<br/>2026-02-18</td>
+                    </tr>
+                    <tr>
+                        <td><strong>39</strong></td>
+                        <td class="issue-title">
+                            Thread ExceptionA connection was successfully established with the server, but then an error occurre...
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">414</span></td>
+                        <td>28</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>40</strong></td>
+                        <td class="issue-title">
+                            bulkAdd Customers
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">398</span></td>
+                        <td>159</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>41</strong></td>
+                        <td class="issue-title">
+                            Slow DB Query
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">396</span></td>
+                        <td>24</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-20</td>
+                    </tr>
+                    <tr>
+                        <td><strong>42</strong></td>
+                        <td class="issue-title">
+                            Microsoft.Data.SqlClient.SqlException: Execution Timeout Expired.  The timeout period elapsed prior ...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">383</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>43</strong></td>
+                        <td class="issue-title">
+                            <unknown>
+                            <span class="project-badge">console</span>
+                        </td>
+                        <td><span class="count-badge">383</span></td>
+                        <td>73</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-20</td>
+                    </tr>
+                    <tr>
+                        <td><strong>44</strong></td>
+                        <td class="issue-title">
+                            Save EditsSaved successfully!
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">381</span></td>
+                        <td>8</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-20</td>
+                    </tr>
+                    <tr>
+                        <td><strong>45</strong></td>
+                        <td class="issue-title">
+                            Save EditsSaved successfully!
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">379</span></td>
+                        <td>2</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-25<br/>2026-02-19</td>
+                    </tr>
+                    <tr>
+                        <td><strong>46</strong></td>
+                        <td class="issue-title">
+                            Slow DB Query
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">374</span></td>
+                        <td>31</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-25<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>47</strong></td>
+                        <td class="issue-title">
+                            Error: Reading the request body timed out due to data arriving too slowly. See MinRequestBodyDataRat...
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">361</span></td>
+                        <td>63</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>48</strong></td>
+                        <td class="issue-title">
+                            System.TimeoutException: The request channel timed out attempting to send after 00:01:00. Increase t...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">337</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>49</strong></td>
+                        <td class="issue-title">
+                            Thread ExceptionA transport-level error has occurred when receiving results from the server. (provid...
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">330</span></td>
+                        <td>18</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-20</td>
+                    </tr>
+                    <tr>
+                        <td><strong>50</strong></td>
+                        <td class="issue-title">
+                            Slow DB Query
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">326</span></td>
+                        <td>24</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-25<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>51</strong></td>
+                        <td class="issue-title">
+                            Error fetching Me url. Status Code: Unauthorized Reason: Unauthorized
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">299</span></td>
+                        <td>118</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-25<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>52</strong></td>
+                        <td class="issue-title">
+                            Unexpected Execution Error: {"response":{"errors":[{"message":"Unexpected Execution Error","location...
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">285</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2026-02-10<br/>2026-02-10</td>
+                    </tr>
+                    <tr>
+                        <td><strong>53</strong></td>
+                        <td class="issue-title">
+                            Unexpected Execution Error: {"response":{"errors":[{"message":"Unexpected Execution Error","location...
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">284</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2026-02-10<br/>2026-02-10</td>
+                    </tr>
+                    <tr>
+                        <td><strong>54</strong></td>
+                        <td class="issue-title">
+                            Error: Unexpected Execution Error : Connection string is null or empty.
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">283</span></td>
+                        <td>3</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-12-02<br/>2026-01-30</td>
+                    </tr>
+                    <tr>
+                        <td><strong>55</strong></td>
+                        <td class="issue-title">
+                            System.ServiceModel.CommunicationException: An error occurred while sending the request.
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">281</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>56</strong></td>
+                        <td class="issue-title">
+                            bulkAdd Products
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">281</span></td>
+                        <td>125</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>57</strong></td>
+                        <td class="issue-title">
+                            Error: Unexpected Execution Error : Connection string is null or empty.
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">281</span></td>
+                        <td>69</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-25<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>58</strong></td>
+                        <td class="issue-title">
+                            Microsoft.Data.SqlClient.SqlException: A connection was successfully established with the server, bu...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">269</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-19</td>
+                    </tr>
+                    <tr>
+                        <td><strong>59</strong></td>
+                        <td class="issue-title">
+                            System.ServiceModel.CommunicationException: An error occurred while sending the request.
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">267</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-25<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>60</strong></td>
+                        <td class="issue-title">
+                            System.AggregateException: One or more errors occurred.
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">254</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>61</strong></td>
+                        <td class="issue-title">
+                            Slow DB Query
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">253</span></td>
+                        <td>20</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>62</strong></td>
+                        <td class="issue-title">
+                            Microsoft.Data.SqlClient.SqlException: A connection was successfully established with the server, bu...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">244</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>63</strong></td>
+                        <td class="issue-title">
+                            Microsoft.Data.SqlClient.SqlException: A connection was successfully established with the server, bu...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">243</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>64</strong></td>
+                        <td class="issue-title">
+                            Slow DB Query
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">243</span></td>
+                        <td>17</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>65</strong></td>
+                        <td class="issue-title">
+                            Save EditsSaved successfully!
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">241</span></td>
+                        <td>10</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-18</td>
+                    </tr>
+                    <tr>
+                        <td><strong>66</strong></td>
+                        <td class="issue-title">
+                            TypeError: Failed to update a ServiceWorker for scope ('https://worksuite.silverfern.red/') with scr...
+                            <span class="project-badge">worksuite-pwa</span>
+                        </td>
+                        <td><span class="count-badge">225</span></td>
+                        <td>27</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-17</td>
+                    </tr>
+                    <tr>
+                        <td><strong>67</strong></td>
+                        <td class="issue-title">
+                            Slow DB Query
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">215</span></td>
+                        <td>22</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-12-21<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>68</strong></td>
+                        <td class="issue-title">
+                            bulkAdd Locations
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">207</span></td>
+                        <td>116</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>69</strong></td>
+                        <td class="issue-title">
+                            System.ServiceModel.FaultException: Sorry, we just updated this page. Reopen it, and try again.
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">198</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-20</td>
+                    </tr>
+                    <tr>
+                        <td><strong>70</strong></td>
+                        <td class="issue-title">
+                            bulkAdd Parent Locations
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">194</span></td>
+                        <td>84</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2025-11-26<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>71</strong></td>
+                        <td class="issue-title">
+                            Device not found and could not be created. appInstallId: 2c3a0231-b353-46ab-aca7-cfb90383f3fa
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">188</span></td>
+                        <td>68</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2026-01-15<br/>2026-02-17</td>
+                    </tr>
+                    <tr>
+                        <td><strong>72</strong></td>
+                        <td class="issue-title">
+                            Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. ...
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">188</span></td>
+                        <td>68</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2026-01-15<br/>2026-02-17</td>
+                    </tr>
+                    <tr>
+                        <td><strong>73</strong></td>
+                        <td class="issue-title">
+                            Slow DB Query
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">188</span></td>
+                        <td>25</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>74</strong></td>
+                        <td class="issue-title">
+                            System.AggregateException: One or more errors occurred.
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">180</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>75</strong></td>
+                        <td class="issue-title">
+                            bulkAdd Settings
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">173</span></td>
+                        <td>76</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2025-11-25<br/>2026-02-20</td>
+                    </tr>
+                    <tr>
+                        <td><strong>76</strong></td>
+                        <td class="issue-title">
+                            Error: Unexpected Execution Error : Transaction (Process ID 86) was deadlocked on lock resources wit...
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">173</span></td>
+                        <td>4</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-12-20<br/>2026-02-17</td>
+                    </tr>
+                    <tr>
+                        <td><strong>77</strong></td>
+                        <td class="issue-title">
+                            Slow DB Query
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">165</span></td>
+                        <td>14</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-12-01<br/>2026-02-19</td>
+                    </tr>
+                    <tr>
+                        <td><strong>78</strong></td>
+                        <td class="issue-title">
+                            Save EditsSaved successfully!
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">165</span></td>
+                        <td>6</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-26<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>79</strong></td>
+                        <td class="issue-title">
+                            Slow DB Query
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">161</span></td>
+                        <td>13</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-12-01<br/>2026-02-19</td>
+                    </tr>
+                    <tr>
+                        <td><strong>80</strong></td>
+                        <td class="issue-title">
+                            <unknown>
+                            <span class="project-badge">worksuite-pwa</span>
+                        </td>
+                        <td><span class="count-badge">159</span></td>
+                        <td>14</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-19</td>
+                    </tr>
+                    <tr>
+                        <td><strong>81</strong></td>
+                        <td class="issue-title">
+                            Microsoft.Data.SqlClient.SqlException: Execution Timeout Expired.  The timeout period elapsed prior ...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">157</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-23<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>82</strong></td>
+                        <td class="issue-title">
+                            ReferenceError: handleViewChange is not defined
+                            <span class="project-badge">worksuite-pwa</span>
+                        </td>
+                        <td><span class="count-badge">140</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2026-01-27<br/>2026-01-27</td>
+                    </tr>
+                    <tr>
+                        <td><strong>83</strong></td>
+                        <td class="issue-title">
+                            Unexpected Execution Error: {"response":{"errors":[{"message":"Unexpected Execution Error","location...
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">136</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2026-02-05<br/>2026-02-18</td>
+                    </tr>
+                    <tr>
+                        <td><strong>84</strong></td>
+                        <td class="issue-title">
+                            Save EditsSaved successfully!
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">134</span></td>
+                        <td>4</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-16</td>
+                    </tr>
+                    <tr>
+                        <td><strong>85</strong></td>
+                        <td class="issue-title">
+                            Error: Unexpected Execution Error : Connection string is null or empty.
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">132</span></td>
+                        <td>12</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-12-11<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>86</strong></td>
+                        <td class="issue-title">
+                            Save EditsSaved successfully!
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">132</span></td>
+                        <td>4</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-12-01<br/>2026-02-20</td>
+                    </tr>
+                    <tr>
+                        <td><strong>87</strong></td>
+                        <td class="issue-title">
+                            ReferenceError: handleSaveSchedule is not defined
+                            <span class="project-badge">worksuite-pwa</span>
+                        </td>
+                        <td><span class="count-badge">126</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2026-01-12<br/>2026-01-12</td>
+                    </tr>
+                    <tr>
+                        <td><strong>88</strong></td>
+                        <td class="issue-title">
+                            Save EditsSaved successfully!
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">126</span></td>
+                        <td>5</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-25<br/>2026-02-16</td>
+                    </tr>
+                    <tr>
+                        <td><strong>89</strong></td>
+                        <td class="issue-title">
+                            Microsoft.Data.SqlClient.SqlException: A connection was successfully established with the server, bu...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">125</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-25<br/>2026-02-20</td>
+                    </tr>
+                    <tr>
+                        <td><strong>90</strong></td>
+                        <td class="issue-title">
+                            System.AggregateException: One or more errors occurred.
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">122</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-28<br/>2026-02-19</td>
+                    </tr>
+                    <tr>
+                        <td><strong>91</strong></td>
+                        <td class="issue-title">
+                            Slow DB Query
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">119</span></td>
+                        <td>24</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-12-04<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>92</strong></td>
+                        <td class="issue-title">
+                            Fulfill Order Error: Could not submit  PO Order
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">118</span></td>
+                        <td>47</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-12-01<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>93</strong></td>
+                        <td class="issue-title">
+                            System.InvalidOperationException: Invoke or BeginInvoke cannot be called on a control until the wind...
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">118</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>94</strong></td>
+                        <td class="issue-title">
+                            Error updating device. Error: An error occurred while saving the entity changes. See the inner excep...
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">112</span></td>
+                        <td>38</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2026-01-27<br/>2026-02-17</td>
+                    </tr>
+                    <tr>
+                        <td><strong>95</strong></td>
+                        <td class="issue-title">
+                            Error: Unexpected Execution Error : Connection string is null or empty.
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">110</span></td>
+                        <td>3</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2026-01-27<br/>2026-02-12</td>
+                    </tr>
+                    <tr>
+                        <td><strong>96</strong></td>
+                        <td class="issue-title">
+                            Microsoft.EntityFrameworkCore.DbUpdateException: An error occurred while saving the entity changes. ...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">107</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-12-10<br/>2026-02-21</td>
+                    </tr>
+                    <tr>
+                        <td><strong>97</strong></td>
+                        <td class="issue-title">
+                            Save EditsSaved successfully!
+                            <span class="project-badge">produce</span>
+                        </td>
+                        <td><span class="count-badge">101</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2025-11-30<br/>2026-01-09</td>
+                    </tr>
+                    <tr>
+                        <td><strong>98</strong></td>
+                        <td class="issue-title">
+                            bulkAdd Material Lots
+                            <span class="project-badge">silver-fern</span>
+                        </td>
+                        <td><span class="count-badge">101</span></td>
+                        <td>29</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-warning">warning</span></td>
+                        <td class="date">2025-12-01<br/>2026-02-20</td>
+                    </tr>
+                    <tr>
+                        <td><strong>99</strong></td>
+                        <td class="issue-title">
+                            Error: Unexpected Execution Error : Connection string is null or empty.
+                            <span class="project-badge">inventory-api</span>
+                        </td>
+                        <td><span class="count-badge">100</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-info">info</span></td>
+                        <td class="date">2026-01-27<br/>2026-01-30</td>
+                    </tr>
+                    <tr>
+                        <td><strong>100</strong></td>
+                        <td class="issue-title">
+                            Microsoft.Data.SqlClient.SqlException: A connection was successfully established with the server, bu...
+                            <span class="project-badge">bonnie-data-processor</span>
+                        </td>
+                        <td><span class="count-badge">99</span></td>
+                        <td>1</td>
+                        <td><span class="badge badge-unresolved">unresolved</span></td>
+                        <td><span class="badge badge-error">error</span></td>
+                        <td class="date">2025-11-24<br/>2026-02-21</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+
+        <div class="footer">
+            <p>Silver Fern Sentry Error Dashboard</p>
+            <p style="font-size: 0.9em; opacity: 0.8; margin-top: 10px;">Powered by Sentry & T ⚡</p>
+        </div>
+    </div>
+</body>
+</html>
